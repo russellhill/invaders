@@ -16,6 +16,8 @@
     var INVADER_MAX_HEIGHT = 64 * SCALE_FACTOR;
     var INVADER_START_SPEED = 75;
     var INVADER_START_BULLET_FREQUENCY = 1000;
+    var INVADER_ROWS = 5;
+    var INVADERS_PER_ROW = 11;
 
     var invaderType = {
         invader1: 1,
@@ -34,6 +36,7 @@
     };
 
     var invaders = [];
+    var invaderRows = [];
     var bullets = [];
     var keyMap = {};
     var bases = [];
@@ -73,7 +76,7 @@
 
     function setupInvaders() {
         var startY = 50;
-        for (var rows = 0; rows < 5; rows++) {
+        for (var rows = 0; rows < INVADER_ROWS; rows++) {
             var startX = 50;
             var typeOfInvader = invaderType.invader1;
 
@@ -85,13 +88,17 @@
                 typeOfInvader = invaderType.invader3;
             }
 
-            for (var col = 0; col < 11; col++) {
-                var newInvader = new invader(typeOfInvader, startX, startY);
-                invaders.push(newInvader);
-                // startX += newInvader.width + INVADER_HORIZ_GAP;
-                startX += INVADER_MAX_WIDTH + INVADER_HORIZ_GAP;
-            };
+            // for (var col = 0; col < INVADERS_PER_ROW; col++) {
+            //     var newInvader = new invader(typeOfInvader, startX, startY);
+            //     invaders.push(newInvader);
+            //     // startX += newInvader.width + INVADER_HORIZ_GAP;
+            //     startX += INVADER_MAX_WIDTH + INVADER_HORIZ_GAP;
+            // };
 
+            var invaderRow = new row(invaderMoveDirection);
+            invaderRow.init(typeOfInvader, startX, startY);
+
+            invaderRows.push(invaderRow);
             // startY += newInvader.height + INVADER_VERT_GAP;
             startY += INVADER_MAX_HEIGHT + INVADER_VERT_GAP;
         }
@@ -121,12 +128,19 @@
     };
 
     function drawInvaders() {
-        if (invaders.length > 0) {
-            invaders.forEach(function(invaderIcon) {
-                invaderIcon.direction = invaderMoveDirection;
-                invaderIcon.draw();
-                invaderIcon.move()
-            });
+        // if (invaders.length > 0) {
+        //     invaders.forEach(function(invaderIcon) {
+        //         invaderIcon.direction = invaderMoveDirection;
+        //         invaderIcon.draw();
+        //         invaderIcon.move()
+        //     });
+        // }
+        if (invaderRows.length > 0) {
+            invaderRows.forEach(function(row) {
+                row.direction = invaderMoveDirection;
+                row.draw();
+                row.move();
+            })
         }
     };
 
@@ -243,6 +257,16 @@
             context.drawImage(this.image, this.x, this.y, this.width, this.height);
         };
 
+        this.checkHit = function(x, y) {
+            var hit = false;
+            if (x > this.x && x < this.x + this.width) {
+                if (y > this.y && y < this.y + this.height) {
+                    hit = true;
+                }
+            }
+            return hit;
+        };
+
         this.move = function() {
             var currentTime = (new Date()).getTime();
 
@@ -282,7 +306,7 @@
                 }
                 this.lastMoveTick = currentTime;
             }
-        }
+        };
     };
 
     function bullet(type, owner) {
@@ -340,4 +364,87 @@
             context.drawImage(this.image, this.x, this.y, this.width, this.height);            
         }
     };
+
+    function row(moveDirection) {
+        this.invaders = [];
+        this.direction = moveDirection;
+
+        this.init = function (typeOfInvader, startX, startY) {
+            this.x = startX;
+            this.y = startY;
+            this.width = INVADER_MAX_WIDTH * INVADERS_PER_ROW;
+            this.height = INVADER_MAX_HEIGHT;
+            this.typeOfInvader = typeOfInvader;
+
+            for (var vader = 0; vader < INVADERS_PER_ROW; vader++) {
+                var newInvader = new invader(typeOfInvader, startX, startY);
+                this.invaders.push(newInvader);
+                startX += INVADER_MAX_WIDTH + INVADER_HORIZ_GAP;
+            }
+        }
+
+        this.draw = function () {
+            if (this.invaders.length > 0) {
+                this.invaders.forEach(function(invader) {
+                    invader.draw();
+                });
+            }
+        }
+
+        this.checkHit = function (x, y) {
+            var hit = false;
+            if (this.invaders.length > 0) {
+                var leftX = this.invaders[0].x;
+                var rightX = this.invaders[this.invaders.length - 1].x + this.invaders[this.invaders.length - 1].width;
+
+                if (y > this.y && y < this.y + this.height) {
+                    if (x > leftX && x < rightX) {
+// TODO break early
+                        this.invaders.forEach(function(invader) {
+                            if (invader.checkHit(x, y)) {
+                                hit = true;
+                            }
+                        })
+                    }
+                }
+
+            }
+            return hit;
+        }
+
+        this.move = function () {
+            if (this.invaders.length > 0) {
+                var leftX = this.x + this.invaders[0].x;
+                var rightX = leftX + this.invaders[this.invaders.length - 1].x + this.invaders[this.invaders.length - 1].width;
+console.log('this.x', this.x);
+console.log('lextX', leftX);
+console.log('rightX', rightX);
+                if (this.direction === invaderDirection.right) {
+                    if (rightX + INVADER_MOVE_SPEED < canvas.width) {
+console.log('left');
+                        this.x += INVADER_MOVE_SPEED;
+                        // if (this.frame === 0) {
+                        //     this.frame = 1;
+                        // } else {
+                        //     this.frame = 0;
+                        // }
+                    } else {
+                        invaderChangeDirection();
+                    }
+                } else {
+                    if (leftX - INVADER_MOVE_SPEED > 0) {
+console.log('right');
+                        this.x -= INVADER_MOVE_SPEED;
+                        // if (this.frame === 0) {
+                        //     this.frame = 1;
+                        // } else {
+                        //     this.frame = 0;
+                        // }
+                    } else {
+                        invaderChangeDirection();
+                    }
+                }
+            }
+        };
+    }
 </script>
