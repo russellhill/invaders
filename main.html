@@ -282,7 +282,16 @@
                 }
                 this.lastMoveTick = currentTime;
             }
-        }
+        };
+
+        this.hitTest = function(x, y) {
+            if (x > this.x && x < this.x + this.width) {
+                if (y > this.y && y < this.y + this.height) {
+                    return true;
+                }
+            }
+            return false;
+        };
     };
 
     function bullet(type, owner) {
@@ -338,6 +347,6 @@
 
         this.draw = function () {
             context.drawImage(this.image, this.x, this.y, this.width, this.height);            
-        }
+        };
     };
 </script>
